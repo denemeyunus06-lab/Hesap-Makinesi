@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hesap Makinesi">
+  <title>Hesap Makinesi</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600&display=swap');
+
+    :root {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      background-color: #000000;
+      color: #ffffff;
+      touch-action: manipulation;
+    }
+
+    /* iOS Calculator Button Palette */
+    .btn-dark {
+      background-color: #333333;
+      color: #ffffff;
+    }
+    .btn-dark:active {
+      background-color: #737373;
+    }
+
+    .btn-light {
+      background-color: #a5a5a5;
+      color: #000000;
+    }
+    .btn-light:active {
+      background-color: #d9d9d9;
+    }
+
+    .btn-orange {
+      background-color: #ff9f0a;
+      color: #ffffff;
+    }
+    .btn-orange:active {
+      background-color: #fcc78d;
+    }
+
+    .btn-orange.active-op {
+      background-color: #ffffff;
+      color: #ff9f0a;
+    }
+
+    /* Smooth scaling feedback */
+    .calc-btn {
+      transition: opacity 0.15s ease, transform 0.08s ease;
+    }
+    .calc-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Hide scrollbars */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-black text-white h-screen w-screen flex flex-col justify-end items-center overflow-hidden pb-8 sm:pb-12 pt-6">
+
+  <!-- Main Calculator Container -->
+  <div class="w-full max-w-[420px] px-4 flex flex-col justify-end h-full">
+
+    <!-- Top Status / Discreet Trick Mode Indicator (hidden from spectator) -->
+    <div class="w-full flex justify-between items-center text-xs text-neutral-800 px-3 pb-1 select-none">
+      <span id="trickStatusDot" class="w-1.5 h-1.5 rounded-full bg-transparent"></span>
+      <span class="text-[10px] tracking-widest text-neutral-800">CALC</span>
+    </div>
+
+    <!-- Display Screen (Long press or double tap to set secret forced number) -->
+    <div id="displayArea" class="w-full flex flex-col justify-end items-end px-3 py-2 cursor-pointer select-none">
+      <div id="equationDisplay" class="text-neutral-500 text-sm h-5 font-normal tracking-wide pr-1"></div>
+      <div id="mainDisplay" class="text-white font-light tracking-tight text-right w-full overflow-hidden text-7xl leading-none">
+        0
+      </div>
+    </div>
+
+    <!-- Keypad Grid (Standard 4x5 iOS Layout) -->
+    <div class="grid grid-cols-4 gap-3.5 sm:gap-4 mt-4 w-full">
+      <!-- Row 1 -->
+      <button id="btnClear" class="calc-btn btn-light rounded-full aspect-square text-3xl font-medium flex items-center justify-center">AC</button>
+      <button id="btnSign" class="calc-btn btn-light rounded-full aspect-square text-2xl font-medium flex items-center justify-center">±</button>
+      <button id="btnPercent" class="calc-btn btn-light rounded-full aspect-square text-2xl font-medium flex items-center justify-center">%</button>
+      <button data-op="/" class="calc-btn btn-orange rounded-full aspect-square text-3xl font-medium flex items-center justify-center pb-1">÷</button>
+
+      <!-- Row 2 -->
+      <button data-num="7" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">7</button>
+      <button data-num="8" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">8</button>
+      <button data-num="9" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">9</button>
+      <button data-op="*" class="calc-btn btn-orange rounded-full aspect-square text-3xl font-medium flex items-center justify-center pb-1">×</button>
+
+      <!-- Row 3 -->
+      <button data-num="4" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">4</button>
+      <button data-num="5" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">5</button>
+      <button data-num="6" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">6</button>
+      <button data-op="-" class="calc-btn btn-orange rounded-full aspect-square text-3xl font-medium flex items-center justify-center pb-1">−</button>
+
+      <!-- Row 4 -->
+      <button data-num="1" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">1</button>
+      <button data-num="2" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">2</button>
+      <button data-num="3" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center">3</button>
+      <button data-op="+" class="calc-btn btn-orange rounded-full aspect-square text-3xl font-medium flex items-center justify-center pb-1">+</button>
+
+      <!-- Row 5 (Zero spanning 2 cols) -->
+      <button data-num="0" class="calc-btn btn-dark rounded-full col-span-2 text-3xl font-normal flex items-center justify-start pl-8">0</button>
+      <button id="btnDecimal" class="calc-btn btn-dark rounded-full aspect-square text-3xl font-normal flex items-center justify-center pb-2">,</button>
+      <button id="btnEquals" class="calc-btn btn-orange rounded-full aspect-square text-3xl font-medium flex items-center justify-center pb-1">=</button>
+    </div>
+  </div>
+
+  <!-- Secret Magician Setup Modal -->
+  <div id="secretModal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-6 z-50">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center">
+      <div class="w-12 h-1 bg-neutral-700 rounded-full mb-4"></div>
+      
+      <h3 class="text-lg font-semibold text-white mb-1">Toxic Force Ayarları</h3>
+      <p class="text-xs text-neutral-400 text-center mb-5">
+        Seyirci hangi işlemleri yaparsa yapsın, <b>=</b> tuşuna basıldığında burada belirlenen sayı çıkacaktır.
+      </p>
+
+      <div class="w-full mb-4">
+        <label class="text-xs text-neutral-400 font-medium block mb-1">Hedef Sayı (Sonuç)</label>
+        <input 
+          id="secretInput" 
+          type="text" 
+          inputmode="numeric" 
+          value="1907" 
+          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-2xl font-bold text-center text-white focus:outline-none focus:border-amber-500"
+          placeholder="Örn: 1907"
+        />
+      </div>
+
+      <div class="w-full flex items-center justify-between bg-neutral-800/60 p-3 rounded-xl mb-5">
+        <span class="text-sm font-medium text-neutral-200">Hile Modu Aktif</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="secretToggle" class="sr-only peer" checked>
+          <div class="w-11 h-6 bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 w-full">
+        <button id="btnCancelModal" class="w-full py-3 bg-neutral-800 text-neutral-300 font-semibold rounded-xl text-sm">İptal</button>
+        <button id="btnSaveModal" class="w-full py-3 bg-amber-500 text-black font-semibold rounded-xl text-sm">Kaydet & Çık</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State variables
+    let currentInput = "0";
+    let storedValue = null;
+    let currentOperator = null;
+    let shouldResetInput = false;
+
+    // Secret Force configuration
+    let forcedTarget = "1907";
+    let isForceActive = true;
+    let hasPressedEqualOnce = false;
+
+    // DOM Elements
+    const mainDisplay = document.getElementById("mainDisplay");
+    const equationDisplay = document.getElementById("equationDisplay");
+    const btnClear = document.getElementById("btnClear");
+    const displayArea = document.getElementById("displayArea");
+    const secretModal = document.getElementById("secretModal");
+    const secretInput = document.getElementById("secretInput");
+    const secretToggle = document.getElementById("secretToggle");
+    const btnSaveModal = document.getElementById("btnSaveModal");
+    const btnCancelModal = document.getElementById("btnCancelModal");
+    const trickStatusDot = document.getElementById("trickStatusDot");
+    const opButtons = document.querySelectorAll("[data-op]");
+
+    // Format number with standard commas/periods for iOS styling
+    function formatNumberString(str) {
+      if (str === "Hata") return str;
+      const parts = str.split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      return parts.join(",");
+    }
+
+    // Dynamic font resizing according to digit length
+    function updateDisplay(text) {
+      const formatted = formatNumberString(text);
+      mainDisplay.textContent = formatted;
+      
+      const length = formatted.length;
+      if (length > 9) {
+        mainDisplay.className = "text-white font-light tracking-tight text-right w-full overflow-hidden text-4xl leading-none";
+      } else if (length > 7) {
+        mainDisplay.className = "text-white font-light tracking-tight text-right w-full overflow-hidden text-5xl leading-none";
+      } else if (length > 5) {
+        mainDisplay.className = "text-white font-light tracking-tight text-right w-full overflow-hidden text-6xl leading-none";
+      } else {
+        mainDisplay.className = "text-white font-light tracking-tight text-right w-full overflow-hidden text-7xl leading-none";
+      }
+
+      // Toggle AC or C
+      if (currentInput !== "0" || storedValue !== null) {
+        btnClear.textContent = "C";
+      } else {
+        btnClear.textContent = "AC";
+      }
+    }
+
+    // Clear active highlight on operator buttons
+    function clearOpHighlight() {
+      opButtons.forEach(btn => btn.classList.remove("active-op"));
+    }
+
+    // Number Buttons
+    document.querySelectorAll("[data-num]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const num = btn.getAttribute("data-num");
+        clearOpHighlight();
+
+        if (currentInput === "0" || shouldResetInput) {
+          currentInput = num;
+          shouldResetInput = false;
+        } else {
+          if (currentInput.replace(".", "").length < 9) {
+            currentInput += num;
+          }
+        }
+        updateDisplay(currentInput);
+      });
+    });
+
+    // Decimal Button
+    document.getElementById("btnDecimal").addEventListener("click", () => {
+      clearOpHighlight();
+      if (shouldResetInput) {
+        currentInput = "0.";
+        shouldResetInput = false;
+      } else if (!currentInput.includes(".")) {
+        currentInput += ".";
+      }
+      updateDisplay(currentInput);
+    });
+
+    // Sign +/- Button
+    document.getElementById("btnSign").addEventListener("click", () => {
+      if (currentInput === "0" || currentInput === "Hata") return;
+      if (currentInput.startsWith("-")) {
+        currentInput = currentInput.slice(1);
+      } else {
+        currentInput = "-" + currentInput;
+      }
+      updateDisplay(currentInput);
+    });
+
+    // Percent % Button
+    document.getElementById("btnPercent").addEventListener("click", () => {
+      const val = parseFloat(currentInput);
+      if (!isNaN(val)) {
+        currentInput = (val / 100).toString();
+        updateDisplay(currentInput);
+      }
+    });
+
+    // Operator Buttons (+, -, *, /)
+    opButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const op = btn.getAttribute("data-op");
+        clearOpHighlight();
+        btn.classList.add("active-op");
+
+        storedValue = parseFloat(currentInput);
+        currentOperator = op;
+        shouldResetInput = true;
+      });
+    });
+
+    // Clear / All-Clear (AC) Button
+    btnClear.addEventListener("click", () => {
+      clearOpHighlight();
+      currentInput = "0";
+      storedValue = null;
+      currentOperator = null;
+      shouldResetInput = false;
+      hasPressedEqualOnce = false;
+      updateDisplay("0");
+    });
+
+    // Equals (=) Button: The heart of the trick
+    document.getElementById("btnEquals").addEventListener("click", () => {
+      clearOpHighlight();
+
+      // If the trick mode is active, override whatever calculation was done!
+      if (isForceActive) {
+        currentInput = forcedTarget;
+        storedValue = null;
+        currentOperator = null;
+        shouldResetInput = true;
+        updateDisplay(forcedTarget);
+        return;
+      }
+
+      // Normal genuine calculation fallback
+      if (storedValue !== null && currentOperator) {
+        const currentVal = parseFloat(currentInput);
+        let result = 0;
+
+        switch (currentOperator) {
+          case "+": result = storedValue + currentVal; break;
+          case "-": result = storedValue - currentVal; break;
+          case "*": result = storedValue * currentVal; break;
+          case "/": result = currentVal === 0 ? "Hata" : storedValue / currentVal; break;
+        }
+
+        currentInput = result.toString();
+        storedValue = null;
+        currentOperator = null;
+        shouldResetInput = true;
+        updateDisplay(currentInput);
+      }
+    });
+
+    // Long-press or rapid double tap on Display Area to open secret config
+    let pressTimer;
+    displayArea.addEventListener("touchstart", () => {
+      pressTimer = setTimeout(openSecretConfig, 600);
+    });
+    displayArea.addEventListener("touchend", () => clearTimeout(pressTimer));
+    displayArea.addEventListener("mousedown", () => {
+      pressTimer = setTimeout(openSecretConfig, 600);
+    });
+    displayArea.addEventListener("mouseup", () => clearTimeout(pressTimer));
+
+    // Also allow long press on AC button as a backup trigger
+    btnClear.addEventListener("touchstart", () => {
+      pressTimer = setTimeout(openSecretConfig, 1000);
+    });
+    btnClear.addEventListener("touchend", () => clearTimeout(pressTimer));
+
+    function openSecretConfig() {
+      secretInput.value = forcedTarget;
+      secretToggle.checked = isForceActive;
+      secretModal.classList.remove("hidden");
+      secretModal.classList.add("flex");
+      setTimeout(() => secretInput.focus(), 150);
+    }
+
+    btnCancelModal.addEventListener("click", () => {
+      secretModal.classList.add("hidden");
+      secretModal.classList.remove("flex");
+    });
+
+    btnSaveModal.addEventListener("click", () => {
+      if (secretInput.value.trim() !== "") {
+        forcedTarget = secretInput.value.trim();
+      }
+      isForceActive = secretToggle.checked;
+      
+      // Update discreet dot (barely visible hint for the performer)
+      trickStatusDot.className = isForceActive 
+        ? "w-1.5 h-1.5 rounded-full bg-neutral-900" 
+        : "w-1.5 h-1.5 rounded-full bg-transparent";
+
+      secretModal.classList.add("hidden");
+      secretModal.classList.remove("flex");
+    });
+  </script>
+</body>
+</html>
